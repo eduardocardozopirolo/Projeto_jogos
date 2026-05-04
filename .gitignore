@@ -1,0 +1,26 @@
+# Gradle
+.gradle/
+build/
+dist/
+
+# IDE
+.idea/
+*.iml
+*.iws
+*.ipr
+.classpath
+.project
+.settings/
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Java
+*.class
+*.jar
+*.log
+
+# Local
+local.properties
+.env
