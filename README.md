@@ -119,4 +119,4 @@ Os recursos visuais do jogo ficam na pasta `Projeto_jogos-main/assets/`. O modul
 
 ## Autor
 
-Projeto desenvolvido por Eduardo Pirolo.
+Projeto desenvolvido por Eduardo Pirolo, Ana Beatriz e Gustavo Agustine
