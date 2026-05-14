@@ -1,0 +1,13 @@
+buttons/exit.png
+buttons/fundoMenu.png
+buttons/pause.png
+buttons/pause_houver.png
+buttons/start.png
+buttons/start_hover.png
+fazes/fundo1.png
+logo/logo.png
+menu/background.png
+menu/fundoLiso.png
+personas/bomba.png
+personas/fantasma.png
+personas/fantasmaVermelho.png
