@@ -1,0 +1,13 @@
+{
+  "version": "0.2.0",
+  "configurations": [
+    {
+      "type": "java",
+      "name": "Run Lwjgl3Launcher",
+      "request": "launch",
+      "mainClass": "br.com.eduardopirolo.fruitninja3.lwjgl3.Lwjgl3Launcher",
+      "cwd": "${workspaceFolder}/assets",
+      "vmArgs": "--enable-native-access=ALL-UNNAMED"
+    }
+  ]
+}
