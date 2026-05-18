@@ -1,0 +1,253 @@
+package br.com.eduardopirolo.fruitninja3;
+
+import com.badlogic.gdx.ApplicationAdapter;
+import com.badlogic.gdx.Gdx;
+import com.badlogic.gdx.graphics.Texture;
+import com.badlogic.gdx.graphics.g2d.SpriteBatch;
+import com.badlogic.gdx.graphics.g2d.BitmapFont;
+import com.badlogic.gdx.graphics.g2d.TextureRegion;
+import com.badlogic.gdx.graphics.Color;
+import com.badlogic.gdx.utils.ScreenUtils;
+
+/** {@link com.badlogic.gdx.ApplicationListener} implementation shared by all platforms. */
+public class Main extends ApplicationAdapter {
+    private enum GameState {
+        MENU,
+        FASE1,
+        FASE2,
+        PAUSED
+    }
+
+    private SpriteBatch batch;
+    private Menu menu;
+    private faze1 faseUm;
+    private faze2 faseDois;
+    private GameState currentState;
+    private GameState stateBeforePause;
+    private BitmapFont scoreFont;
+    private Texture pauseTexture;
+    private Texture pauseHoverTexture;
+    private Texture exitTexture;
+    private Texture pauseBackgroundTexture;
+    private Texture pausePanelTexture;
+    private TextureRegion pauseButtonRegion;
+    private TextureRegion pauseHoverButtonRegion;
+    private TextureRegion exitButtonRegion;
+    private float pauseButtonX;
+    private float pauseButtonY;
+    private float pauseButtonWidth;
+    private float pauseButtonHeight;
+    private float resumeButtonX;
+    private float resumeButtonY;
+    private float resumeButtonWidth;
+    private float resumeButtonHeight;
+    private float menuButtonX;
+    private float menuButtonY;
+    private float menuButtonWidth;
+    private float menuButtonHeight;
+    private boolean returnMenuRequested;
+
+    @Override
+    public void create() {
+        batch = new SpriteBatch();
+        menu = new Menu();
+        faseUm = new faze1();
+        faseDois = null;
+        currentState = GameState.MENU;
+        stateBeforePause = GameState.FASE1;
+        scoreFont = new BitmapFont();
+        scoreFont.setColor(Color.WHITE);
+        scoreFont.getData().setScale(1.5f);
+        pauseTexture = new Texture("buttons/pause.png");
+        pauseHoverTexture = new Texture("buttons/pause_houver.png");
+        exitTexture = new Texture("buttons/exit.png");
+        pauseBackgroundTexture = new Texture("menu/fundoLiso.png");
+        pausePanelTexture = new Texture("buttons/fundoMenu.png");
+        pauseButtonRegion = new TextureRegion(pauseTexture, 28, 147, 446, 202);
+        pauseHoverButtonRegion = new TextureRegion(pauseHoverTexture, 117, 248, 1311, 604);
+        exitButtonRegion = new TextureRegion(exitTexture, 63, 111, 490, 183);
+        returnMenuRequested = false;
+    }
+
+    @Override
+    public void render() {
+        ScreenUtils.clear(0.15f, 0.15f, 0.2f, 1f);
+        batch.begin();
+
+        if (currentState == GameState.MENU) {
+            menu.render(batch);
+
+            // Check for mouse click on menu button
+            if (Gdx.input.justTouched()) {
+                float mouseX = Gdx.input.getX();
+                float mouseY = Gdx.input.getY();
+                if (menu.isStartButtonClicked(mouseX, mouseY)) {
+                    currentState = GameState.FASE1;
+                } else if (menu.isExitButtonClicked(mouseX, mouseY)) {
+                    Gdx.app.exit();
+                }
+            }
+        } else if (currentState == GameState.FASE1) {
+            faseUm.render(batch);
+            int currentScore = faseUm.getScore();
+            if (currentScore > 100) {
+                faseDois = new faze2(currentScore);
+                currentState = GameState.FASE2;
+            }
+
+            // Draw score
+            String scoreText = "Pontuacao: " + currentScore;
+            scoreFont.draw(batch, scoreText, 20, Gdx.graphics.getHeight() - 20);
+            drawPauseButton(batch);
+            handlePauseButtonClick(currentState == GameState.FASE2 ? GameState.FASE2 : GameState.FASE1);
+        } else if (currentState == GameState.FASE2) {
+            faseDois.render(batch);
+            String scoreText = "Pontuacao: " + faseDois.getScore();
+            scoreFont.draw(batch, scoreText, 20, Gdx.graphics.getHeight() - 20);
+            drawPauseButton(batch);
+            handlePauseButtonClick(GameState.FASE2);
+        } else if (currentState == GameState.PAUSED) {
+            renderPausedGame(batch);
+            drawPauseMenu(batch);
+            handlePauseMenuClick();
+        }
+
+        batch.end();
+
+        handlePendingGameReset();
+    }
+
+    private void drawPauseButton(SpriteBatch batch) {
+        updatePauseButtonBounds();
+        TextureRegion currentPauseTexture = isInsideImageButton(Gdx.input.getX(), Gdx.graphics.getHeight() - Gdx.input.getY(),
+            pauseButtonX, pauseButtonY, pauseButtonWidth, pauseButtonHeight)
+            ? pauseHoverButtonRegion
+            : pauseButtonRegion;
+        batch.draw(currentPauseTexture, pauseButtonX, pauseButtonY, pauseButtonWidth, pauseButtonHeight);
+    }
+
+    private void handlePauseButtonClick(GameState currentGameState) {
+        if (!Gdx.input.justTouched()) {
+            return;
+        }
+
+        float mouseX = Gdx.input.getX();
+        float mouseY = Gdx.graphics.getHeight() - Gdx.input.getY();
+
+        if (isInsideImageButton(mouseX, mouseY, pauseButtonX, pauseButtonY, pauseButtonWidth, pauseButtonHeight)) {
+            stateBeforePause = currentGameState;
+            currentState = GameState.PAUSED;
+        }
+    }
+
+    private void updatePauseButtonBounds() {
+        pauseButtonWidth = Gdx.graphics.getWidth() * 0.12f;
+        pauseButtonHeight = pauseButtonWidth * pauseButtonRegion.getRegionHeight() / pauseButtonRegion.getRegionWidth();
+        pauseButtonX = Gdx.graphics.getWidth() - pauseButtonWidth - 24f;
+        pauseButtonY = Gdx.graphics.getHeight() - pauseButtonHeight - 16f;
+    }
+
+    private void renderPausedGame(SpriteBatch batch) {
+        if (stateBeforePause == GameState.FASE2 && faseDois != null) {
+            faseDois.renderPaused(batch);
+            String scoreText = "Pontuacao: " + faseDois.getScore();
+            scoreFont.draw(batch, scoreText, 20, Gdx.graphics.getHeight() - 20);
+        } else {
+            faseUm.renderPaused(batch);
+            String scoreText = "Pontuacao: " + faseUm.getScore();
+            scoreFont.draw(batch, scoreText, 20, Gdx.graphics.getHeight() - 20);
+        }
+    }
+
+    private void drawPauseMenu(SpriteBatch batch) {
+        float centerX = Gdx.graphics.getWidth() / 2f;
+        float centerY = Gdx.graphics.getHeight() / 2f;
+        updatePauseMenuBounds(centerX, centerY);
+
+        batch.setColor(1f, 1f, 1f, 0.92f);
+        batch.draw(pauseBackgroundTexture, 0, 0, Gdx.graphics.getWidth(), Gdx.graphics.getHeight());
+        batch.setColor(1f, 1f, 1f, 1f);
+
+        float panelWidth = Gdx.graphics.getWidth() * 0.45f;
+        float panelHeight = panelWidth * pausePanelTexture.getHeight() / pausePanelTexture.getWidth();
+        batch.draw(pausePanelTexture, centerX - panelWidth / 2f, centerY - panelHeight / 2f, panelWidth, panelHeight);
+
+        TextureRegion currentResumeTexture = isInsideImageButton(Gdx.input.getX(), Gdx.graphics.getHeight() - Gdx.input.getY(),
+            resumeButtonX, resumeButtonY, resumeButtonWidth, resumeButtonHeight)
+            ? pauseHoverButtonRegion
+            : pauseButtonRegion;
+        batch.draw(currentResumeTexture, resumeButtonX, resumeButtonY, resumeButtonWidth, resumeButtonHeight);
+
+        batch.draw(exitButtonRegion, menuButtonX, menuButtonY, menuButtonWidth, menuButtonHeight);
+    }
+
+    private void handlePauseMenuClick() {
+        if (!Gdx.input.justTouched()) {
+            return;
+        }
+
+        float mouseX = Gdx.input.getX();
+        float mouseY = Gdx.graphics.getHeight() - Gdx.input.getY();
+
+        if (isInsideImageButton(mouseX, mouseY, resumeButtonX, resumeButtonY, resumeButtonWidth, resumeButtonHeight)) {
+            currentState = stateBeforePause;
+        } else if (isInsideImageButton(mouseX, mouseY, menuButtonX, menuButtonY, menuButtonWidth, menuButtonHeight)) {
+            Gdx.app.exit();
+        }
+    }
+
+    private void updatePauseMenuBounds(float centerX, float centerY) {
+        resumeButtonWidth = Gdx.graphics.getWidth() * 0.22f;
+        resumeButtonHeight = resumeButtonWidth * pauseButtonRegion.getRegionHeight() / pauseButtonRegion.getRegionWidth();
+        resumeButtonX = centerX - resumeButtonWidth / 2f;
+        resumeButtonY = centerY + 28f;
+
+        menuButtonWidth = resumeButtonWidth;
+        menuButtonHeight = menuButtonWidth * exitButtonRegion.getRegionHeight() / exitButtonRegion.getRegionWidth();
+        menuButtonX = centerX - menuButtonWidth / 2f;
+        menuButtonY = centerY - menuButtonHeight - 72f;
+    }
+
+    private boolean isInsideImageButton(float mouseX, float mouseY, float x, float y, float width, float height) {
+        return mouseX >= x &&
+               mouseX <= x + width &&
+               mouseY >= y &&
+               mouseY <= y + height;
+    }
+
+    private void restartGame() {
+        faseUm.dispose();
+        if (faseDois != null) {
+            faseDois.dispose();
+        }
+
+        faseUm = new faze1();
+        faseDois = null;
+        stateBeforePause = GameState.FASE1;
+        currentState = GameState.FASE1;
+    }
+
+    private void handlePendingGameReset() {
+        if (returnMenuRequested) {
+            returnMenuRequested = false;
+            restartGame();
+            currentState = GameState.MENU;
+        }
+    }
+
+    @Override
+    public void dispose() {
+        batch.dispose();
+        menu.dispose();
+        faseUm.dispose();
+        if (faseDois != null) {
+            faseDois.dispose();
+        }
+        scoreFont.dispose();
+        pauseTexture.dispose();
+        pauseHoverTexture.dispose();
+        exitTexture.dispose();
+        pauseBackgroundTexture.dispose();
+        pausePanelTexture.dispose();
+    }
+}
